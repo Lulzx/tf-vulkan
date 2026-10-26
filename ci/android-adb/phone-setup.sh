@@ -28,9 +28,12 @@ python -c "import tensorflow as tf; print(tf.__version__); print(tf.config.list_
 echo "=== Vulkan via Mesa panvk (Panthor DRM) ==="
 export PAN_I_WANT_A_BROKEN_VULKAN_DRIVER=1
 ls /usr/share/vulkan/icd.d/
-vulkaninfo --summary 2>&1 | head -30
+PANVK_ICD=$(ls /usr/share/vulkan/icd.d/*panfrost*.json /usr/share/vulkan/icd.d/*panvk*.json 2>/dev/null | head -1)
+echo "panvk ICD: $PANVK_ICD"
+VK_ICD_FILENAMES=$PANVK_ICD vulkaninfo --summary 2>&1 | head -40
 
 echo "=== Build tf-vulkan (native runtime + TF plugin) ==="
+PANVK_ICD=$(ls /usr/share/vulkan/icd.d/*panfrost*.json /usr/share/vulkan/icd.d/*panvk*.json 2>/dev/null | head -1)
 cd /root
 git clone https://github.com/Lulzx/tf-vulkan.git || (cd tf-vulkan && git pull)
 cd tf-vulkan
@@ -39,11 +42,11 @@ cmake -S . -B build-phone -DTFVK_BUILD_TF_PLUGIN=ON -DTFVK_TF_INCLUDE_DIR=$TFINC
 cmake --build build-phone -j || exit 1
 
 echo "=== Probe (panvk) ==="
-VK_ICD_FILENAMES=$(ls /usr/share/vulkan/icd.d/*panvk*.json | head -1) ./build-phone/tfvk_probe || true
+VK_ICD_FILENAMES=$PANVK_ICD ./build-phone/tfvk_probe || true
 
 echo "=== F5: strict MatMul through TF on phone GPU (attempt) ==="
 TFVK_GRAPH_LOG=/sdcard/tf-graph.log \
-VK_ICD_FILENAMES=$(ls /usr/share/vulkan/icd.d/*panvk*.json | head -1) \
+VK_ICD_FILENAMES=$PANVK_ICD \
 TF_VULKAN_PLUGIN=/root/tf-vulkan/build-phone/libtf_vulkan.so \
 python tests/integration/test_tf_plugin.py || true
 echo "=== DONE ==="

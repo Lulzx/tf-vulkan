@@ -1,5 +1,6 @@
 #include "allocator.h"
 
+#include <algorithm>
 #include <cstring>
 
 namespace tfvk {
