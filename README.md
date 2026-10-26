@@ -10,7 +10,7 @@ on real hardware.
 
 | Gate | What | State on this checkout |
 |---|---|---|
-| F0 full TF in host app | `import tensorflow` + plugin C APIs in the host build | Desktop harness PASS (TF 2.21); Android host app still TBD |
+| F0 full TF in host app | `import tensorflow` + plugin C APIs in the host build | PASS on desktop (TF 2.21) and on Pixel 9 (TF 2.21 in adb-driven Ubuntu proot, CPU); Android host app still TBD |
 | F1/F1b/F1c plugin load, D1, Vulten audit | Symbol checklist, device-type experiment, port-vs-clean-room | Desktop PASS: plugin loads, GPU/VULKAN registered; F1b/F1c open (docs/api-compatibility.md) |
 | F2 packaging | Bionic namespaces, `RTLD_GLOBAL`, SONAME | Documented; needs a real device |
 | F3 Vulkan compute | Standalone dispatch + feature/tier report | PASS on Pixel 9 (Mali-G715, Tier A) and desktop harness |

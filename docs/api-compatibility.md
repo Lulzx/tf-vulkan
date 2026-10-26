@@ -59,3 +59,17 @@ FP16 is never used implicitly for FP32 tensors (§6.4).
   unreachable from glibc. Conclusion: on-phone TF+GPU (F5) requires a
   bionic TensorFlow build in a host app; the Android plugin .so is
   built and ready for it. proot gives F0 + CPU TF only.
+
+## adb-driven proot (Pixel 9, no Termux interaction)
+A second on-phone environment was built entirely from `adb shell`:
+Termux's proot binary + Ubuntu 24.04 rootfs under /data/local/tmp,
+launched with --link2symlink (Android SELinux denies hardlink(2) to
+the shell domain, which otherwise breaks dpkg) and DNS-over-TCP.
+- TF 2.21.0 (pip) imports and runs: F0-equivalent on device (glibc).
+- The tf-vulkan plugin builds in that environment and loads into TF,
+  reporting Tier C with 0 devices (no abort) as designed.
+- GPU remains unreachable from glibc: opening /dev/dri/renderD128 is
+  Permission denied from both Termux and adb-shell SELinux domains.
+  Panvk would need root or a platform-signed context. F5 (TF+GPU in
+  one process on the phone) therefore still requires a bionic TF
+  build in a host app, for which the Android plugin .so is ready.
