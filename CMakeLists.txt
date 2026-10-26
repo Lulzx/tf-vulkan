@@ -92,7 +92,21 @@ if(TFVK_BUILD_TF_PLUGIN)
   if(APPLE)
     # TF_* symbols resolve from the host process at load time (§5 F2).
     target_link_options(tf_vulkan_plugin PRIVATE -undefined dynamic_lookup)
-  elseif(ANDROID)
+  endif()
+  # On glibc Linux, TF loads plugins with RTLD_LOCAL, which can hide TF_*
+  # symbols (spec §5 F2). Link libtensorflow_framework directly when the
+  # wheel ships it next to the headers, giving the plugin a DT_NEEDED.
+  if(UNIX AND NOT ANDROID)
+    get_filename_component(_tf_root "${TFVK_TF_INCLUDE_DIR}" DIRECTORY)
+    file(GLOB _tf_framework "${_tf_root}/libtensorflow_framework.so*"
+                            "${_tf_root}/libtensorflow_framework.*.dylib")
+    if(_tf_framework)
+      list(GET _tf_framework 0 _tf_framework_lib)
+      target_link_libraries(tf_vulkan_plugin PRIVATE "${_tf_framework_lib}")
+      message(STATUS "tf-vulkan: linking TF framework ${_tf_framework_lib}")
+    endif()
+  endif()
+  if(ANDROID)
     # Same: TF_* symbols are provided by the host app's TF at dlopen (§5 F2).
     target_link_options(tf_vulkan_plugin PRIVATE -Wl,--unresolved-symbols=ignore-all)
   endif()

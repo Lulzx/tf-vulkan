@@ -25,6 +25,9 @@ pip install tensorflow numpy || exit 1
 echo "=== F0: TensorFlow import on phone (Ubuntu proot) ==="
 python -c "import tensorflow as tf; print(tf.__version__); print(tf.config.list_physical_devices())"
 
+echo "=== proot DRM diagnostics ==="
+id; ls -la /dev/dri/ 2>&1; ls -l /dev/dri/renderD128 2>&1
+python3 -c "import os; fd=os.open('/dev/dri/renderD128', os.O_RDWR); print('renderD128 open OK', fd)" 2>&1
 echo "=== Vulkan via Mesa panvk (Panthor DRM) ==="
 export PAN_I_WANT_A_BROKEN_VULKAN_DRIVER=1
 ls /usr/share/vulkan/icd.d/
