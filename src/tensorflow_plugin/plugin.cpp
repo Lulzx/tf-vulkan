@@ -228,7 +228,11 @@ TF_Bool SEHostCallback(const SP_Device*, SP_Stream, SE_StatusCallbackFn fn, void
   return 1;
 }
 void CreateStreamExecutor(const SP_Platform*, SE_CreateStreamExecutorParams* params, TF_Status* status) {
-  if (!EnsureInit()) { TF_SetStatus(status, TF_UNAVAILABLE, "tf-vulkan: Vulkan init failed"); return; }
+  // TF may call this during registration even for a 0-device (Tier C)
+  // platform; never fail it (TF aborts on non-OK). Callbacks guard on
+  // EnsureInit themselves.
+  if (!EnsureInit())
+    std::fprintf(stderr, "tf-vulkan: stream executor requested without a Vulkan device (Tier C)\n");
   SP_StreamExecutor* se = params->stream_executor;
   se->struct_size = SP_STREAMEXECUTOR_STRUCT_SIZE;
   se->ext = nullptr;
