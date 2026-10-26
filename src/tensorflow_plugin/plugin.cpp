@@ -1424,5 +1424,8 @@ extern "C" void SE_InitPlugin(SE_PlatformRegistrationParams* params, TF_Status* 
   f->create_timer_fns = CreateTimerFns; f->destroy_timer_fns = DestroyTimerFns;
   params->destroy_platform = DestroyPlatform;
   params->destroy_platform_fns = DestroyPlatformFns;
-  if (!EnsureInit()) TF_SetStatus(status, TF_UNAVAILABLE, "tf-vulkan: no Vulkan compute device (Tier C)");
+  // Tier C must not fail plugin load: TF aborts on a non-OK status here.
+  // Report success; GetDeviceCount returns 0 and TF stays CPU-only (§5).
+  if (!EnsureInit())
+    std::fprintf(stderr, "tf-vulkan: no Vulkan compute device (Tier C); plugin loaded with 0 devices\n");
 }
