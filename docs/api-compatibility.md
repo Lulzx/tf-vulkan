@@ -46,3 +46,16 @@ Harness device (MoltenVK/Apple M4 Pro) reports `shaderFloat16` +
 (f32 accumulate), pointwise, BiasAdd, and f32<->f16 Cast are implemented
 and validated, and a Keras `mixed_float16` Dense model runs on device.
 FP16 is never used implicitly for FP32 tensors (§6.4).
+
+## On-phone proot attempt (Pixel 9, Termux + Ubuntu proot)
+- F0 PASS in proot: TF 2.22.0-rc0 (glibc aarch64 wheel) imports, CPU runs.
+- Plugin loads in proot after direct libtensorflow_framework linking
+  (RTLD_LOCAL finding). With no GPU visible it must report Tier C with
+  0 devices (fixed: SE_InitPlugin no longer fails the load).
+- GPU via Mesa panvk is SELinux-blocked: /dev/dri is 0666 but the
+  Termux untrusted-app domain is denied graphics_device access
+  (verified: even `ls /dev/dri` is Permission denied inside proot).
+  The app-allowed GPU node is /dev/mali0 via the bionic vendor ICD,
+  unreachable from glibc. Conclusion: on-phone TF+GPU (F5) requires a
+  bionic TensorFlow build in a host app; the Android plugin .so is
+  built and ready for it. proot gives F0 + CPU TF only.
