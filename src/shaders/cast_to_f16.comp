@@ -1,0 +1,13 @@
+#version 450
+#extension GL_EXT_shader_explicit_arithmetic_types_float16 : require
+layout(local_size_x = 256) in;
+layout(set = 0, binding = 0) readonly buffer A { float a[]; };
+layout(set = 0, binding = 1) buffer C { float16_t c[]; };
+layout(push_constant) uniform PC {
+    uint numel; uint op; uint aOff; uint cOff; uint pad0; uint pad1; uint pad2; uint pad3;
+} pc;
+void main() {
+    uint i = gl_GlobalInvocationID.x;
+    if (i >= pc.numel) return;
+    c[i] = float16_t(a[i]);
+}

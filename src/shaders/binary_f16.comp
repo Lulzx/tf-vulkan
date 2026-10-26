@@ -1,0 +1,29 @@
+#version 450
+#extension GL_EXT_shader_explicit_arithmetic_types_float16 : require
+// FP16 binary pointwise (same-shape or scalar rhs); math in FP32.
+// op codes match binary.comp.
+layout(local_size_x = 256) in;
+layout(set = 0, binding = 0) readonly buffer A { float16_t a[]; };
+layout(set = 0, binding = 1) readonly buffer B { float16_t b[]; };
+layout(set = 0, binding = 2) buffer C { float16_t c[]; };
+layout(push_constant) uniform PC {
+    uint numel; uint op; uint bBroadcast; uint aOff; uint bOff; uint cOff; uint pad0; uint pad1;
+} pc;
+void main() {
+    uint i = gl_GlobalInvocationID.x;
+    if (i >= pc.numel) return;
+    float x = float(a[pc.aOff + i]);
+    float y = float(b[pc.bOff + (pc.bBroadcast != 0u ? 0u : i)]);
+    float r;
+    switch (pc.op) {
+        case 0u: r = x + y; break;
+        case 1u: r = x - y; break;
+        case 2u: r = x * y; break;
+        case 3u: r = x / y; break;
+        case 4u: r = y == 0.0 ? 0.0 : x / y; break;
+        case 5u: r = pow(x, y); break;
+        case 6u: r = max(x, y); break;
+        default: { float d = x - y; r = d * d; } break;
+    }
+    c[pc.cOff + i] = float16_t(r);
+}

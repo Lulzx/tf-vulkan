@@ -1,0 +1,21 @@
+#version 450
+// Single-axis reduction over contiguous FP32: out[o*inner+i] =
+//   reduce_{k<axisDim} in[(o*axisDim+k)*inner+i]. op: 0 Sum 1 Mean 2 Max.
+layout(local_size_x = 256) in;
+layout(set = 0, binding = 0) readonly buffer A { float a[]; };
+layout(set = 0, binding = 1) buffer C { float c[]; };
+layout(push_constant) uniform PC {
+    uint outer; uint axisDim; uint inner; uint op; uint aOff; uint cOff; uint pad0; uint pad1;
+} pc;
+void main() {
+    uint idx = gl_GlobalInvocationID.x;
+    if (idx >= pc.outer * pc.inner) return;
+    uint o = idx / pc.inner, i = idx % pc.inner;
+    float acc = pc.op == 2u ? a[pc.aOff + (o * pc.axisDim) * pc.inner + i] : 0.0;
+    for (uint k = 0; k < pc.axisDim; ++k) {
+        float v = a[pc.aOff + (o * pc.axisDim + k) * pc.inner + i];
+        acc = pc.op == 2u ? max(acc, v) : acc + v;
+    }
+    if (pc.op == 1u) acc /= float(pc.axisDim);
+    c[pc.cOff + idx] = acc;
+}

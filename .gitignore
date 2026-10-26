@@ -1,0 +1,8 @@
+build/
+build-plugin/
+build-android/
+.venv/
+.venv-tf/
+__pycache__/
+*.spv
+pipeline_cache.bin

@@ -1,0 +1,37 @@
+#version 450
+// Conv2DBackpropInput: gx[b,ih,iw,ci] = sum_{kh,kw,co} gout[b,oh,ow,co]*f[kh,kw,ci,co]
+// where oh*sH = ih + padH - kh, ow*sW = iw + padW - kw.
+layout(local_size_x = 16, local_size_y = 16) in;
+layout(set = 0, binding = 0) readonly buffer G { float g[]; };
+layout(set = 0, binding = 1) readonly buffer F { float f[]; };
+layout(set = 0, binding = 2) buffer Y { float y[]; };
+layout(push_constant) uniform PC {
+    uint B; uint H; uint W; uint Cin; uint Cout; uint Kh; uint Kw;
+    uint sH; uint sW; uint padH; uint padW; uint outH; uint outW;
+} pc;
+void main() {
+    uint iw_ci = gl_GlobalInvocationID.x;
+    uint b_ih = gl_GlobalInvocationID.y;
+    uint ci = iw_ci % pc.Cin;
+    uint iw = iw_ci / pc.Cin;
+    uint ih = b_ih % pc.H;
+    uint b = b_ih / pc.H;
+    if (iw >= pc.W || ih >= pc.H || b >= pc.B) return;
+    float acc = 0.0;
+    for (uint kh = 0; kh < pc.Kh; ++kh) {
+        int onum = int(ih) + int(pc.padH) - int(kh);
+        if (onum < 0 || onum % int(pc.sH) != 0) continue;
+        uint oh = uint(onum) / pc.sH;
+        if (oh >= pc.outH) continue;
+        for (uint kw = 0; kw < pc.Kw; ++kw) {
+            int wnum = int(iw) + int(pc.padW) - int(kw);
+            if (wnum < 0 || wnum % int(pc.sW) != 0) continue;
+            uint ow = uint(wnum) / pc.sW;
+            if (ow >= pc.outW) continue;
+            for (uint co = 0; co < pc.Cout; ++co)
+                acc += g[((b * pc.outH + oh) * pc.outW + ow) * pc.Cout + co] *
+                       f[((kh * pc.Kw + kw) * pc.Cin + ci) * pc.Cout + co];
+        }
+    }
+    y[((b * pc.H + ih) * pc.W + iw) * pc.Cin + ci] = acc;
+}

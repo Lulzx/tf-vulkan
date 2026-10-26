@@ -1,0 +1,33 @@
+#version 450
+// Pooling NHWC (spec §7 K2). mode: 0 MaxPool 1 AvgPool (count_include_pad=false)
+layout(local_size_x = 16, local_size_y = 16) in;
+layout(set = 0, binding = 0) readonly buffer X { float x[]; };
+layout(set = 0, binding = 1) buffer Y { float y[]; };
+layout(push_constant) uniform PC {
+    uint B; uint H; uint W; uint C; uint Kh; uint Kw;
+    uint sH; uint sW; uint padH; uint padW; uint outH; uint outW; uint mode;
+} pc;
+void main() {
+    uint ow_c = gl_GlobalInvocationID.x;
+    uint b_oh = gl_GlobalInvocationID.y;
+    uint c = ow_c % pc.C;
+    uint ow = ow_c / pc.C;
+    uint oh = b_oh % pc.outH;
+    uint b = b_oh / pc.outH;
+    if (ow >= pc.outW || oh >= pc.outH || b >= pc.B) return;
+    float acc = pc.mode == 0u ? -3.402823466e+38 : 0.0;
+    uint cnt = 0;
+    for (uint kh = 0; kh < pc.Kh; ++kh) {
+        int ih = int(oh * pc.sH) + int(kh) - int(pc.padH);
+        if (ih < 0 || ih >= int(pc.H)) continue;
+        for (uint kw = 0; kw < pc.Kw; ++kw) {
+            int iw = int(ow * pc.sW) + int(kw) - int(pc.padW);
+            if (iw < 0 || iw >= int(pc.W)) continue;
+            float v = x[((b * pc.H + uint(ih)) * pc.W + uint(iw)) * pc.C + c];
+            acc = pc.mode == 0u ? max(acc, v) : acc + v;
+            ++cnt;
+        }
+    }
+    float r = pc.mode == 0u ? acc : (cnt > 0u ? acc / float(cnt) : 0.0);
+    y[((b * pc.outH + oh) * pc.outW + ow) * pc.C + c] = r;
+}

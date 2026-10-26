@@ -1,0 +1,33 @@
+#version 450
+// DepthwiseConv2dNative NHWC (spec §7 K2). Filter [Kh,Kw,Cin,Mult], Cout=Cin*Mult.
+layout(local_size_x = 16, local_size_y = 16) in;
+layout(set = 0, binding = 0) readonly buffer X { float x[]; };
+layout(set = 0, binding = 1) readonly buffer F { float f[]; };
+layout(set = 0, binding = 2) buffer Y { float y[]; };
+layout(push_constant) uniform PC {
+    uint B; uint H; uint W; uint Cin; uint Mult; uint Kh; uint Kw;
+    uint sH; uint sW; uint padH; uint padW; uint outH; uint outW;
+} pc;
+void main() {
+    uint cout = pc.Cin * pc.Mult;
+    uint ow_co = gl_GlobalInvocationID.x;
+    uint b_oh = gl_GlobalInvocationID.y;
+    uint co = ow_co % cout;
+    uint ow = ow_co / cout;
+    uint oh = b_oh % pc.outH;
+    uint b = b_oh / pc.outH;
+    if (ow >= pc.outW || oh >= pc.outH || b >= pc.B) return;
+    uint ci = co / pc.Mult;
+    float acc = 0.0;
+    for (uint kh = 0; kh < pc.Kh; ++kh) {
+        int ih = int(oh * pc.sH) + int(kh) - int(pc.padH);
+        if (ih < 0 || ih >= int(pc.H)) continue;
+        for (uint kw = 0; kw < pc.Kw; ++kw) {
+            int iw = int(ow * pc.sW) + int(kw) - int(pc.padW);
+            if (iw < 0 || iw >= int(pc.W)) continue;
+            acc += x[((b * pc.H + uint(ih)) * pc.W + uint(iw)) * pc.Cin + ci] *
+                   f[((kh * pc.Kw + kw) * pc.Cin + ci) * pc.Mult + (co % pc.Mult)];
+        }
+    }
+    y[((b * pc.outH + oh) * pc.outW + ow) * cout + co] = acc;
+}

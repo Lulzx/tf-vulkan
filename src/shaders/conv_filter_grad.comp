@@ -1,0 +1,31 @@
+#version 450
+// Conv2DBackpropFilter: gf[kh,kw,ci,co] = sum_{b,oh,ow} x[..] * gout[..]
+layout(local_size_x = 16, local_size_y = 16) in;
+layout(set = 0, binding = 0) readonly buffer X { float x[]; };
+layout(set = 0, binding = 1) readonly buffer G { float g[]; };
+layout(set = 0, binding = 2) buffer Y { float y[]; };
+layout(push_constant) uniform PC {
+    uint B; uint H; uint W; uint Cin; uint Cout; uint Kh; uint Kw;
+    uint sH; uint sW; uint padH; uint padW; uint outH; uint outW;
+} pc;
+void main() {
+    uint kh_kw_ci = gl_GlobalInvocationID.x;
+    uint co = gl_GlobalInvocationID.y;
+    if (co >= pc.Cout || kh_kw_ci >= pc.Kh * pc.Kw * pc.Cin) return;
+    uint ci = kh_kw_ci % pc.Cin;
+    uint kw = (kh_kw_ci / pc.Cin) % pc.Kw;
+    uint kh = kh_kw_ci / (pc.Cin * pc.Kw);
+    float acc = 0.0;
+    for (uint b = 0; b < pc.B; ++b)
+        for (uint oh = 0; oh < pc.outH; ++oh) {
+            int ih = int(oh * pc.sH) + int(kh) - int(pc.padH);
+            if (ih < 0 || ih >= int(pc.H)) continue;
+            for (uint ow = 0; ow < pc.outW; ++ow) {
+                int iw = int(ow * pc.sW) + int(kw) - int(pc.padW);
+                if (iw < 0 || iw >= int(pc.W)) continue;
+                acc += x[((b * pc.H + uint(ih)) * pc.W + uint(iw)) * pc.Cin + ci] *
+                       g[((b * pc.outH + oh) * pc.outW + ow) * pc.Cout + co];
+            }
+        }
+    y[kh_kw_ci * pc.Cout + co] = acc;
+}

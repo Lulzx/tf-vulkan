@@ -1,0 +1,34 @@
+#version 450
+// Conv2D NHWC forward (spec §7 K2), dilation 1. Filter [Kh,Kw,Cin,Cout].
+layout(local_size_x = 16, local_size_y = 16) in;
+layout(set = 0, binding = 0) readonly buffer X { float x[]; };
+layout(set = 0, binding = 1) readonly buffer F { float f[]; };
+layout(set = 0, binding = 2) buffer Y { float y[]; };
+layout(push_constant) uniform PC {
+    uint B; uint H; uint W; uint Cin; uint Cout; uint Kh; uint Kw;
+    uint sH; uint sW; uint padH; uint padW; uint outH; uint outW; uint pad2;
+} pc;
+void main() {
+    uint ow_co = gl_GlobalInvocationID.x;   // outW * Cout
+    uint b_oh = gl_GlobalInvocationID.y;    // B * outH
+    uint co = ow_co % pc.Cout;
+    uint ow = ow_co / pc.Cout;
+    uint oh = b_oh % pc.outH;
+    uint b = b_oh / pc.outH;
+    if (ow >= pc.outW || oh >= pc.outH || b >= pc.B) return;
+    float acc = 0.0;
+    for (uint kh = 0; kh < pc.Kh; ++kh) {
+        int ih = int(oh * pc.sH) + int(kh) - int(pc.padH);
+        if (ih < 0 || ih >= int(pc.H)) continue;
+        for (uint kw = 0; kw < pc.Kw; ++kw) {
+            int iw = int(ow * pc.sW) + int(kw) - int(pc.padW);
+            if (iw < 0 || iw >= int(pc.W)) continue;
+            for (uint ci = 0; ci < pc.Cin; ++ci) {
+                float xv = x[((b * pc.H + uint(ih)) * pc.W + uint(iw)) * pc.Cin + ci];
+                float fv = f[((kh * pc.Kw + kw) * pc.Cin + ci) * pc.Cout + co];
+                acc += xv * fv;
+            }
+        }
+    }
+    y[((b * pc.outH + oh) * pc.outW + ow) * pc.Cout + co] = acc;
+}

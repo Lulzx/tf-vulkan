@@ -1,0 +1,19 @@
+#version 450
+#extension GL_EXT_shader_explicit_arithmetic_types_float16 : require
+// FP16 MatMul with FP32 accumulation (spec §7 K1.5, opt-in only).
+layout(local_size_x = 16, local_size_y = 16) in;
+layout(set = 0, binding = 0) readonly buffer A { float16_t a[]; };
+layout(set = 0, binding = 1) readonly buffer B { float16_t b[]; };
+layout(set = 0, binding = 2) buffer C { float16_t c[]; };
+layout(push_constant) uniform PC {
+    uint M; uint N; uint K; uint transA; uint transB; uint aOff; uint bOff; uint cOff;
+} pc;
+float av(uint r, uint k) { return pc.transA != 0u ? float(a[pc.aOff + k * pc.M + r]) : float(a[pc.aOff + r * pc.K + k]); }
+float bv(uint k, uint n) { return pc.transB != 0u ? float(b[pc.bOff + n * pc.K + k]) : float(b[pc.bOff + k * pc.N + n]); }
+void main() {
+    uint col = gl_GlobalInvocationID.x, row = gl_GlobalInvocationID.y;
+    if (row >= pc.M || col >= pc.N) return;
+    float acc = 0.0;
+    for (uint k = 0; k < pc.K; ++k) acc += av(row, k) * bv(k, col);
+    c[pc.cOff + row * pc.N + col] = float16_t(acc);
+}

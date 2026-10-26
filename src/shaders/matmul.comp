@@ -1,0 +1,18 @@
+#version 450
+// Naive FP32 MatMul (correctness baseline, spec §7). C = op(A) * op(B).
+layout(local_size_x = 16, local_size_y = 16) in;
+layout(set = 0, binding = 0) readonly buffer A { float a[]; };
+layout(set = 0, binding = 1) readonly buffer B { float b[]; };
+layout(set = 0, binding = 2) buffer C { float c[]; };
+layout(push_constant) uniform PC {
+    uint M; uint N; uint K; uint transA; uint transB; uint aOff; uint bOff; uint cOff;
+} pc;
+float av(uint r, uint k) { return pc.transA != 0u ? a[pc.aOff + k * pc.M + r] : a[pc.aOff + r * pc.K + k]; }
+float bv(uint k, uint n) { return pc.transB != 0u ? b[pc.bOff + n * pc.K + k] : b[pc.bOff + k * pc.N + n]; }
+void main() {
+    uint col = gl_GlobalInvocationID.x, row = gl_GlobalInvocationID.y;
+    if (row >= pc.M || col >= pc.N) return;
+    float acc = 0.0;
+    for (uint k = 0; k < pc.K; ++k) acc += av(row, k) * bv(k, col);
+    c[pc.cOff + row * pc.N + col] = acc;
+}

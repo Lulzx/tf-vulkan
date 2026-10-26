@@ -1,0 +1,39 @@
+#version 450
+// Binary pointwise ops with numpy-style broadcasting (rank <= 4).
+// op: 0 Add 1 Sub 2 Mul 3 Div 4 DivNoNan 5 Pow 6 Maximum 7 SquaredDifference
+layout(local_size_x = 256) in;
+layout(set = 0, binding = 0) readonly buffer A { float a[]; };
+layout(set = 0, binding = 1) readonly buffer B { float b[]; };
+layout(set = 0, binding = 2) buffer C { float c[]; };
+layout(push_constant) uniform PC {
+    uint numel; uint op; uint rank; uint pad;
+    uint outDims[4]; uint aStrides[4]; uint bStrides[4];
+} pc;
+uint unravel(uint idx, uint strides[4]) {
+    uint off = 0;
+    for (int d = 3; d >= 0; --d) {
+        uint dim = pc.outDims[d];
+        uint coord = dim == 0u ? 0u : idx % dim;
+        idx = dim == 0u ? idx : idx / dim;
+        off += coord * strides[d];
+    }
+    return off;
+}
+void main() {
+    uint i = gl_GlobalInvocationID.x;
+    if (i >= pc.numel) return;
+    float x = a[unravel(i, pc.aStrides)];
+    float y = b[unravel(i, pc.bStrides)];
+    float r;
+    switch (pc.op) {
+        case 0u: r = x + y; break;
+        case 1u: r = x - y; break;
+        case 2u: r = x * y; break;
+        case 3u: r = x / y; break;
+        case 4u: r = y == 0.0 ? 0.0 : x / y; break;
+        case 5u: r = pow(x, y); break;
+        case 6u: r = max(x, y); break;
+        default: { float d = x - y; r = d * d; } break;
+    }
+    c[i] = r;
+}
