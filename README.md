@@ -13,8 +13,8 @@ on real hardware.
 | F0 full TF in host app | `import tensorflow` + plugin C APIs in the host build | Desktop harness PASS (TF 2.21); Android host app still TBD |
 | F1/F1b/F1c plugin load, D1, Vulten audit | Symbol checklist, device-type experiment, port-vs-clean-room | Desktop PASS: plugin loads, GPU/VULKAN registered; F1b/F1c open (docs/api-compatibility.md) |
 | F2 packaging | Bionic namespaces, `RTLD_GLOBAL`, SONAME | Documented; needs a real device |
-| F3 Vulkan compute | Standalone dispatch + feature/tier report | Implemented (`tfvk_probe`); run on a Vulkan harness |
-| F4 buffer ownership | Alloc/copy/release, 10k cycles | Implemented + tested in native runtime |
+| F3 Vulkan compute | Standalone dispatch + feature/tier report | PASS on Pixel 9 (Mali-G715, Tier A) and desktop harness |
+| F4 buffer ownership | Alloc/copy/release, 10k cycles | PASS on Pixel 9 + desktop harness |
 | F5 TF MatMul on `/GPU:0` | Strict placement + profiler evidence | Desktop harness PASS: strict MatMul, chains, Keras MLP, gradients (tests/integration/test_tf_plugin.py); Android pending |
 | F6/F7 IREE / graph lowering | VMFB POC, subgraph round trip | Not implemented; `tf_vulkan.compile()` raises explicitly |
 

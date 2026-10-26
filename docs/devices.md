@@ -23,3 +23,17 @@ test), desktop harness for debugging only.
   Android. It does NOT satisfy the spec's real-device gates (§4/§11):
   Adreno/Mali performance, watchdog limits, and UMA behavior still need
   physical phones.
+
+## Recorded device: Google Pixel 9 (REAL DEVICE, Tensor G4 / Mali-G715)
+- Pixel 9, Android 17 (API 37), arm64-v8a, build DP11.261002.005
+- GPU: Mali-G715 MC7, Vulkan 1.4.349, driver 234881024
+- Features: compute queue, timelineSemaphore, scalarBlockLayout,
+  synchronization2, shaderFloat16, pushDescriptor all present;
+  VK_EXT_memory_budget absent (budget falls back to 30% of 11.1 GiB heap)
+- UMA: memory type 1 is DEVICE_LOCAL|HOST_VISIBLE|COHERENT (type 3 cached)
+- `tfvk_tests` (NDK arm64): ALL PASS incl. FP16 matmul+cast, Conv2D,
+  10k alloc cycles; `tfvk_fuzz_shapes`: PASS (60 shapes)
+- `tfvk_bench` (vs single-thread CPU reference in the same binary):
+  128^3 1.09 ms (2.4x), 512^3 7.0 ms (16.5x), 1024^3 34.9 ms (54.7x)
+- This satisfies F3/F4 on real hardware. F0/F1/F5 still require the host
+  app's TensorFlow Android build running on this phone.
