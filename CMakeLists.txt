@@ -91,6 +91,9 @@ if(TFVK_BUILD_TF_PLUGIN)
   if(APPLE)
     # TF_* symbols resolve from the host process at load time (§5 F2).
     target_link_options(tf_vulkan_plugin PRIVATE -undefined dynamic_lookup)
+  elseif(ANDROID)
+    # Same: TF_* symbols are provided by the host app's TF at dlopen (§5 F2).
+    target_link_options(tf_vulkan_plugin PRIVATE -Wl,--unresolved-symbols=ignore-all)
   endif()
   set_target_properties(tf_vulkan_plugin PROPERTIES OUTPUT_NAME tf_vulkan)
 endif()
