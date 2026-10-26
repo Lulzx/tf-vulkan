@@ -14,6 +14,7 @@ APT="apt-get -o Acquire::ForceIPv4=true"
 echo "=== DRM open test ==="
 python3 -c "import os; fd=os.open('/dev/dri/renderD128', os.O_RDWR); print('renderD128 OPEN OK', fd)"
 
+dpkg --remove --force-all liblerc4 2>/dev/null || true
 dpkg --configure -a || true
 $APT --fix-broken install -y || true
 dpkg --configure -a || true
