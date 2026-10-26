@@ -4,6 +4,7 @@ project(tf-vulkan VERSION 0.1.0 LANGUAGES CXX)
 # development/CI harness only (§1, §11). See docs/architecture.md.
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)  # runtime static lib links into the shared plugin
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)

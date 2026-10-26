@@ -52,5 +52,5 @@ python tests/integration/test_tf_plugin.py || true
 echo "=== DONE ==="
 EOS
 
-proot-distro login ubuntu -- bash /sdcard/tf-vulkan-ubuntu.sh
+proot-distro login --bind /dev/dri:/dev/dri ubuntu -- bash /sdcard/tf-vulkan-ubuntu.sh
 echo "=== setup finished: $(date) ==="
