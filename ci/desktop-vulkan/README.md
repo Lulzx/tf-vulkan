@@ -1,3 +1,5 @@
 # Desktop Vulkan CI harness
-GitHub Actions workflow in `.github/workflows/ci.yml` (lavapipe). Desktop
-results are debugging evidence only, never mobile performance claims (§11).
+No CI workflow is configured. Run locally: `cmake -S . -B build &&
+cmake --build build -j && ctest --test-dir build` (lavapipe or a real
+Vulkan device). Desktop results are debugging evidence only, never
+mobile performance claims (§11).
