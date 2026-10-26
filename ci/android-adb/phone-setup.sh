@@ -10,7 +10,7 @@ echo "=== tf-vulkan phone setup: $(date) ==="
 pkg install -y proot-distro || exit 1
 proot-distro install ubuntu || true
 
-cat > /root/tf-vulkan-ubuntu.sh <<'EOS'
+cat > /sdcard/tf-vulkan-ubuntu.sh <<'EOS'
 set -x
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
@@ -49,5 +49,5 @@ python tests/integration/test_tf_plugin.py || true
 echo "=== DONE ==="
 EOS
 
-proot-distro login ubuntu -- bash /root/tf-vulkan-ubuntu.sh
+proot-distro login ubuntu -- bash /sdcard/tf-vulkan-ubuntu.sh
 echo "=== setup finished: $(date) ==="
