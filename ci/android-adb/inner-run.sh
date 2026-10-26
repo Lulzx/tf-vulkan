@@ -8,13 +8,14 @@ LOG=/sdcard/tf-vulkan-adb.log
 exec > >(tee "$LOG") 2>&1
 echo "=== tf-vulkan adb proot run: $(date) ==="
 id; uname -a
-echo "nameserver 8.8.8.8" > /etc/resolv.conf
+# resolv.conf is prepared by the host-side launcher (DNS-over-TCP to 8.8.8.8)
+APT="apt-get -o Acquire::ForceIPv4=true"
 
 echo "=== DRM open test ==="
 python3 -c "import os; fd=os.open('/dev/dri/renderD128', os.O_RDWR); print('renderD128 OPEN OK', fd)"
 
-apt-get update
-apt-get install -y python3-venv cmake g++ git libvulkan-dev glslang-tools \
+$APT update
+$APT install -y python3-venv cmake g++ git libvulkan-dev glslang-tools \
   mesa-vulkan-drivers vulkan-tools || exit 1
 
 echo "=== Vulkan via panvk ==="
