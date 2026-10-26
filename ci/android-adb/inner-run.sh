@@ -19,7 +19,7 @@ dpkg --configure -a || true
 $APT --fix-broken install -y || true
 dpkg --configure -a || true
 $APT update
-$APT install -y python3-venv cmake g++ git libvulkan-dev glslang-tools \
+$APT install -y python3-venv cmake make g++ git libvulkan-dev glslang-tools \
   mesa-vulkan-drivers vulkan-tools || exit 1
 
 echo "=== Vulkan via panvk ==="
